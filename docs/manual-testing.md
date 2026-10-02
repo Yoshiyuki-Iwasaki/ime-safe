@@ -43,8 +43,9 @@ OS version, IME name, date, and any failed steps.
 
 | Browser | OS / IME | Result | Date / notes |
 | --- | --- | --- | --- |
-| Chrome | Pending | Not executed | Real IME verification required |
-| Safari | Pending | Not executed | Real IME verification required |
+| Chrome 154 | macOS 15.7.9 / Japanese | Pass (partial) | 2026-10-02: Japanese confirmation Enter and the next Enter passed. Other items not executed. |
+| Safari 18.6 | macOS 15.7.9 / Japanese | Pass (partial) | 2026-10-02: Japanese confirmation Enter and the next Enter passed. Other items not executed. |
+| Chrome / Safari | macOS / Chinese, Korean | Not executed | Includes the Korean second-Enter check |
 | Firefox | Pending | Not executed | Real IME verification required |
 
 Do not interpret passing jsdom sequence tests as these manual checks passing.
