@@ -70,6 +70,7 @@ describe("useIMESafeEnter", () => {
     expect(fireEvent.keyDown(field, { key: "Enter", shiftKey: true, repeat: true })).toBe(false);
     expect(onEnter).not.toHaveBeenCalled();
   });
+
   describe.each<Target>(["input", "textarea", "contentEditable"])("on %s", (target) => {
     it("calls onEnter for a normal Enter", () => {
       const { onEnter, field } = setup({ target });

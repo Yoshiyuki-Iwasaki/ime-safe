@@ -108,8 +108,13 @@ npm pack --dry-run
 `npm pack` runs type checking, tests, and the build before packaging. Only the
 built library, README, license, and package metadata are shipped. Development
 documentation and the manual test page stay in the repository.
-The React peer dependency is not bundled. This is intentionally an ESM-only package; no CommonJS build or `require` export
-is provided. CommonJS applications should use asynchronous `import("ime-safe")`.
+The React peer dependency is not bundled. This is intentionally an ESM-only
+package; no separate CommonJS build or `require` export is provided. On Node.js
+20.19+ or 22.12+ (and later major versions), `require("ime-safe")` and
+`require("ime-safe/core")` work through Node's
+[require(esm) support](https://nodejs.org/api/modules.html#loading-ecmascript-modules-using-require).
+Older CommonJS environments that support dynamic import can use asynchronous
+`import("ime-safe")` instead.
 
 Unit tests replay Chrome/Edge, Safari, Firefox, Windows Chrome, and Korean IME
 event orderings in jsdom; they do not operate a real IME. Real-browser verification
