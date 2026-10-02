@@ -49,6 +49,18 @@ describe("useIME", () => {
   });
 
   describe.each<Target>(["input", "textarea", "contentEditable"])("on %s", (target) => {
+    it("resets on blur without compositionend and allows a new composition", () => {
+      render(<Field target={target} />);
+      const field = screen.getByTestId("field");
+      fireEvent.compositionStart(field);
+      expect(state()).toBe("true");
+      fireEvent.blur(field);
+      expect(state()).toBe("false");
+      fireEvent.compositionStart(field);
+      expect(state()).toBe("true");
+      fireEvent.compositionEnd(field);
+      expect(state()).toBe("false");
+    });
     it("is true after compositionstart", () => {
       render(<Field target={target} />);
       fireEvent.compositionStart(screen.getByTestId("field"), { data: "" });
@@ -86,10 +98,11 @@ describe("useIME", () => {
 
   it("keeps stable compositionProps handlers across renders", () => {
     const { result, rerender } = renderHook(() => useIME());
-    const { onCompositionStart, onCompositionEnd } = result.current.compositionProps;
+    const { onCompositionStart, onCompositionEnd, onBlur } = result.current.compositionProps;
     rerender();
     expect(result.current.compositionProps.onCompositionStart).toBe(onCompositionStart);
     expect(result.current.compositionProps.onCompositionEnd).toBe(onCompositionEnd);
+    expect(result.current.compositionProps.onBlur).toBe(onBlur);
   });
 
   describe("recommended usage with isIMEComposing (README example)", () => {

@@ -7,7 +7,7 @@ handling. Keep its scope focused on keyboard utilities; UI components, editors,
 and IME conversion are outside the MVP.
 
 - `src/isIMEComposing.ts`: stateless detection with no React dependency.
-- `src/useIME.ts`: composition state for rendering.
+- `src/useIME.ts`: composition state for rendering, reset on blur.
 - `src/useIMESafeEnter.ts`: React Enter handling.
 - `src/index.ts`: public exports.
 - `test/`: Vitest and Testing Library tests; `sequences.ts` replays browser orderings.
@@ -24,7 +24,8 @@ and IME conversion are outside the MVP.
   `compositionend` before the confirming Enter; React state is for rendering.
 - `useIMESafeEnter` handles plain Enter and optionally Shift+Enter. Ctrl, Meta,
   and Alt modifiers pass through. Shift+Enter defaults to `"newline"`.
-- Prevent the default action only when invoking `onEnter`, unless disabled.
+- Suppress repeated Enter keydowns by default; `allowRepeat` opts into repeats.
+- Prevent default for handled Enter, including suppressed repeats, unless disabled.
   Ignored IME events must remain available to the IME.
 - Keep `onKeyDown` stable while using the latest committed callback and options.
 - Preserve React 17+ support, SSR safety, and HTMLElement-generic handlers for

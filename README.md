@@ -28,12 +28,23 @@ extra newline or implicit form submission. IME confirmation passes through untou
 | --- | --- | --- |
 | `onEnter` | Required | Receives the React keyboard event |
 | `shiftEnter` | `"newline"` | Passes Shift+Enter through; `"submit"` calls `onEnter` |
-| `preventDefault` | `true` | Prevents the default action only when invoking `onEnter` |
+| `preventDefault` | `true` | Prevents default for handled Enter, including suppressed repeats |
+| `allowRepeat` | `false` | Suppresses repeated Enter keydowns; `true` allows held-key submissions |
 
 Ctrl, Meta, and Alt + Enter pass through untouched. `onKeyDown` keeps the same
 identity across renders and uses the latest committed callback and options.
 No composition handlers are required. Use the same handler on `<input>` or
 `<div contentEditable onKeyDown={onKeyDown} />`.
+
+Holding Enter calls `onEnter` only on the first keydown by default. Suppressed
+repeats still prevent the browser default when `preventDefault` is true. IME
+events and passthrough modifiers are unaffected.
+
+On an `<input>` inside a `<form>`, passthrough Shift/Ctrl/Meta/Alt + Enter can
+trigger native implicit form submission without calling `onEnter`. `"newline"`
+means passthrough; single-line inputs cannot insert a newline. If all submissions
+should be controlled by your application, prevent the form default in `onSubmit`
+and route sending through your explicit callback.
 
 ## Composition state and custom keyboard handling
 
@@ -60,10 +71,11 @@ function Input({ sendMessage }: { sendMessage: () => void }) {
 ```
 
 `useIME()` tracks `compositionstart` and `compositionend` for rendering indicators.
+Its `compositionProps.onBlur` resets state if focus leaves before composition ends.
 Its state must **not** guard keyboard actions: Safari can end composition before
 the confirming Enter keydown, and React state updates are not synchronous.
 If you attach your own composition handlers, call the corresponding
-`compositionProps` handler as well; spreading props does not merge handlers.
+`compositionProps` handler (including `onBlur`) as well; spreading props does not merge handlers.
 
 `isIMEComposing(event)` is stateless and accepts native events, React events, or
 plain objects with optional `key`, `keyCode`, `isComposing`, and `nativeEvent` fields.
@@ -94,9 +106,11 @@ npm pack --dry-run
 ```
 
 `npm pack` runs type checking, tests, and the build before packaging. Only the
-built library, documentation, README, license, and package metadata are shipped.
-The React peer dependency is not bundled. This is an ESM package.
+built library, README, license, and package metadata are shipped. Development
+documentation and the manual test page stay in the repository.
+The React peer dependency is not bundled. This is intentionally an ESM-only package; no CommonJS build or `require` export
+is provided. CommonJS applications should use asynchronous `import("ime-safe")`.
 
 Unit tests replay Chrome/Edge, Safari, Firefox, Windows Chrome, and Korean IME
 event orderings in jsdom; they do not operate a real IME. Real-browser verification
-and its current status are documented in [the manual checklist](docs/manual-testing.md).
+and its current status are documented in [the manual checklist](https://github.com/Yoshiyuki-Iwasaki/ime-safe/blob/main/docs/manual-testing.md).

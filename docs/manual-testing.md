@@ -24,6 +24,8 @@ using Japanese, Chinese, and Korean IMEs where available. Record browser version
 OS version, IME name, date, and any failed steps.
 
 - Plain Enter increments the submission count once.
+- Holding Enter increments the count only once with the default repeat policy.
+- Moving focus away mid-composition resets the composition indicator.
 - Enter confirming Japanese or Chinese conversion leaves the count unchanged.
 - A new Enter immediately after confirmation increments the count once.
 - Korean Enter submits exactly once when the IME emits a second real keydown.
@@ -32,7 +34,8 @@ OS version, IME name, date, and any failed steps.
 - Shift+Enter in newline mode leaves the count unchanged and inserts a newline
   on textarea/contentEditable (input has no multiline behavior).
 - Shift+Enter in submit mode increments the count once.
-- Ctrl/Meta/Alt + Enter does not increment the count.
+- Ctrl/Meta/Alt + Enter does not increment the count. In a form, passthrough
+  modifiers can still cause native submission; test the form onSubmit policy.
 - IME confirmation is not canceled in either Shift+Enter mode.
 - With preventDefault disabled, Enter submits while preserving the default action.
 

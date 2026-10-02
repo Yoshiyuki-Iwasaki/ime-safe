@@ -33,6 +33,7 @@ function Field({ tag, shiftEnter, preventDefault }) {
       ...(tag === 'contentEditable' ? { contentEditable: true, suppressContentEditableWarning: true } : {}),
       onCompositionStart: e => { compositionProps.onCompositionStart(e); append('compositionstart'); },
       onCompositionEnd: e => { compositionProps.onCompositionEnd(e); append('compositionend'); },
+      onBlur: e => { compositionProps.onBlur(e); append('blur'); },
       onKeyDown: e => {
         onKeyDown(e);
         append(`keydown key=${e.key} keyCode=${e.nativeEvent.keyCode} isComposing=${e.nativeEvent.isComposing} prevented=${e.defaultPrevented}`);

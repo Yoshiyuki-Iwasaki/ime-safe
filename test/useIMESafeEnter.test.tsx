@@ -30,6 +30,46 @@ function setup(options: Partial<Options> & { target?: Target } = {}) {
 }
 
 describe("useIMESafeEnter", () => {
+  it("suppresses held-key submissions and their browser default", () => {
+    const { field, onEnter } = setup();
+    plainEnter(field);
+    expect(fireEvent.keyDown(field, { key: "Enter", repeat: true })).toBe(false);
+    expect(onEnter).toHaveBeenCalledTimes(1);
+    plainEnter(field);
+    expect(onEnter).toHaveBeenCalledTimes(2);
+  });
+
+  it("preserves default actions for suppressed repeats when prevention is disabled", () => {
+    const { field, onEnter } = setup({ preventDefault: false });
+    expect(fireEvent.keyDown(field, { key: "Enter", repeat: true })).toBe(true);
+    expect(onEnter).not.toHaveBeenCalled();
+  });
+
+  it("supports enabling repeat submissions after rerender", () => {
+    const onEnter = vi.fn();
+    const { rerender } = render(<Field onEnter={onEnter} />);
+    const field = screen.getByTestId("field");
+    fireEvent.keyDown(field, { key: "Enter", repeat: true });
+    expect(onEnter).not.toHaveBeenCalled();
+    rerender(<Field onEnter={onEnter} allowRepeat />);
+    fireEvent.keyDown(field, { key: "Enter", repeat: true });
+    expect(onEnter).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    { isComposing: true }, { keyCode: 229 }, { ctrlKey: true },
+    { metaKey: true }, { altKey: true }, { shiftKey: true },
+  ])("leaves repeated passthrough events untouched: %o", (init) => {
+    const { field, onEnter } = setup();
+    expect(fireEvent.keyDown(field, { key: "Enter", repeat: true, ...init })).toBe(true);
+    expect(onEnter).not.toHaveBeenCalled();
+  });
+
+  it("suppresses repeat submission in Shift+Enter submit mode", () => {
+    const { field, onEnter } = setup({ shiftEnter: "submit" });
+    expect(fireEvent.keyDown(field, { key: "Enter", shiftKey: true, repeat: true })).toBe(false);
+    expect(onEnter).not.toHaveBeenCalled();
+  });
   describe.each<Target>(["input", "textarea", "contentEditable"])("on %s", (target) => {
     it("calls onEnter for a normal Enter", () => {
       const { onEnter, field } = setup({ target });

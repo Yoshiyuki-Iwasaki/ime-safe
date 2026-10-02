@@ -5,7 +5,9 @@ export type UseIMESafeEnterOptions<T extends HTMLElement = HTMLElement> = {
   onEnter: (event: KeyboardEvent<T>) => void;
   /** Defaults to "newline", passing Shift+Enter through untouched. */
   shiftEnter?: "newline" | "submit";
-  /** Defaults to true; only applied when onEnter is invoked. */
+  /** Defaults to false, suppressing held-key submissions. */
+  allowRepeat?: boolean;
+  /** Defaults to true; also prevents the default action of suppressed repeats. */
   preventDefault?: boolean;
 };
 
@@ -30,9 +32,10 @@ export function useIMESafeEnter<T extends HTMLElement = HTMLElement>(
       event.key !== "Enter" || isIMEComposing(event) ||
       event.ctrlKey || event.metaKey || event.altKey
     ) return;
-    const { onEnter, shiftEnter = "newline", preventDefault = true } = latestOptions.current;
+    const { onEnter, shiftEnter = "newline", preventDefault = true, allowRepeat = false } = latestOptions.current;
     if (event.shiftKey && shiftEnter !== "submit") return;
     if (preventDefault) event.preventDefault();
+    if (event.repeat && !allowRepeat) return;
     onEnter(event);
   }, []);
 
