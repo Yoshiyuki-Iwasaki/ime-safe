@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ime-safe manual verification</title>
+<style>
+  body { font: 16px system-ui; max-width: 800px; margin: 2rem auto; padding: 1rem; }
+  input, textarea, [contenteditable] { display: block; box-sizing: border-box; width: 100%; margin: 1rem 0; padding: .5rem; border: 1px solid #888; }
+  textarea, [contenteditable] { min-height: 5rem; }
+  pre { white-space: pre-wrap; }
+</style>
+<script type="importmap">
+{"imports":{"react":"https://esm.sh/react@19.2.0","react-dom/client":"https://esm.sh/react-dom@19.2.0/client?external=react"}}
+</script>
+<div id="root"></div>
+<script type="module">
+import { createElement as h, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import { useIME, useIMESafeEnter } from '../dist/index.js';
+
+function Field({ tag, shiftEnter, preventDefault }) {
+  const [count, setCount] = useState(0);
+  const [log, setLog] = useState([]);
+  const { isComposing, compositionProps } = useIME();
+  const { onKeyDown } = useIMESafeEnter({
+    onEnter: () => setCount(n => n + 1), shiftEnter, preventDefault,
+  });
+  const append = text => setLog(lines => [...lines.slice(-19), text]);
+  return h('section', null,
+    h('h2', null, tag),
+    h(tag === 'contentEditable' ? 'div' : tag, {
+      'aria-label': tag,
+      ...(tag === 'contentEditable' ? { contentEditable: true, suppressContentEditableWarning: true } : {}),
+      onCompositionStart: e => { compositionProps.onCompositionStart(e); append('compositionstart'); },
+      onCompositionEnd: e => { compositionProps.onCompositionEnd(e); append('compositionend'); },
+      onKeyDown: e => {
+        onKeyDown(e);
+        append(`keydown key=${e.key} keyCode=${e.nativeEvent.keyCode} isComposing=${e.nativeEvent.isComposing} prevented=${e.defaultPrevented}`);
+      },
+    }),
+    h('p', null, `Submissions: ${count}; composing: ${isComposing}`),
+    h('button', { onClick: () => { setCount(0); setLog([]); } }, 'Reset results'),
+    h('pre', null, log.join('\n')),
+  );
+}
+function App() {
+  const [shiftEnter, setShiftEnter] = useState('newline');
+  const [preventDefault, setPreventDefault] = useState(true);
+  return h('main', null,
+    h('h1', null, 'ime-safe manual verification'),
+    h('label', null, 'Shift+Enter: ', h('select', { value: shiftEnter, onChange: e => setShiftEnter(e.target.value) },
+      h('option', { value: 'newline' }, 'newline'), h('option', { value: 'submit' }, 'submit'))),
+    h('label', null, h('input', { type: 'checkbox', checked: preventDefault, onChange: e => setPreventDefault(e.target.checked) }), 'Prevent default on submit'),
+    ...['input', 'textarea', 'contentEditable'].map(tag => h(Field, { key: tag, tag, shiftEnter, preventDefault })),
+  );
+}
+createRoot(document.getElementById('root')).render(h(App));
+</script>
+</html>
