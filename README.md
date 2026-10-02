@@ -77,6 +77,24 @@ the confirming Enter keydown, and React state updates are not synchronous.
 If you attach your own composition handlers, call the corresponding
 `compositionProps` handler (including `onBlur`) as well; spreading props does not merge handlers.
 
+For example, preserve the reset when adding your own blur behavior:
+
+```tsx
+const { compositionProps } = useIME();
+
+<textarea
+  {...compositionProps}
+  onBlur={(event) => {
+    compositionProps.onBlur(event);
+    saveDraft();
+  }}
+/>;
+```
+
+Despite its name, `compositionProps` also includes `onBlur` for recovery when
+`compositionend` is missing. Placing your own `onBlur` after the spread replaces
+that handler, so call it explicitly as shown above.
+
 `isIMEComposing(event)` is stateless and accepts native events, React events, or
 plain objects with optional `key`, `keyCode`, `isComposing`, and `nativeEvent` fields.
 It returns true if either event contains `isComposing === true`, `keyCode === 229`,
