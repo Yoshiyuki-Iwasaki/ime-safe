@@ -1,58 +1,101 @@
 # ime-safe
 
-Small TypeScript utilities for IME-safe keyboard handling in React 17 and later.
-Supports inputs, textareas, and `contentEditable`, with no runtime dependencies
-other than the React peer dependency. The package ships ES modules and TypeScript declarations.
+[![npm version](https://img.shields.io/npm/v/ime-safe.svg)](https://www.npmjs.com/package/ime-safe)
+[![CI](https://github.com/Yoshiyuki-Iwasaki/ime-safe/actions/workflows/ci.yml/badge.svg)](https://github.com/Yoshiyuki-Iwasaki/ime-safe/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+**Stop sending half-typed messages when users press Enter to confirm IME conversion.**
+
+`ime-safe` provides small, typed React utilities that handle Enter safely for
+Japanese, Chinese, Korean, and other IME users.
+
+## The problem
+
+Users of an input method editor (IME) press Enter to *confirm* a conversion,
+not to submit. Browsers still fire a `keydown` event with `key === "Enter"`, so
+the common pattern below submits the message mid-composition:
+
+```tsx
+// ❌ Also fires on the Enter that confirms a conversion, sending unfinished text
+<textarea onKeyDown={(e) => e.key === "Enter" && send()} />
+```
+
+Checking `event.isComposing` alone is not enough either. Safari fires
+`compositionend` *before* the confirming Enter keydown, and Korean IMEs emit a
+second, genuine Enter keydown that should submit immediately.
+
+## Features
+
+- 🛡 **IME-safe Enter**: ignores Enter that confirms a conversion in Chrome,
+  Edge, Safari, and Firefox, including Safari's out-of-order events.
+- 🇰🇷 **No timeouts**: stateless detection lets the real Enter after a Korean
+  composition submit immediately.
+- ⌨️ **Sensible keyboard behavior**: Shift+Enter for newlines, modifier
+  shortcuts pass through, and holding Enter submits only once.
+- 🧩 **Works on any element**: `<input>`, `<textarea>`, and `contentEditable`.
+- 🪶 **Tiny and dependency-free**: React is the only peer dependency, and the
+  `ime-safe/core` entry point works without React.
+- 🔷 **TypeScript first**: ships ES modules with type declarations. SSR safe.
+
+## Installation
 
 ```sh
 npm install ime-safe
 ```
 
-## Safe Enter handling
+Requires React 17 or later.
+
+## Quick start
 
 ```tsx
 import { useIMESafeEnter } from "ime-safe";
 
-function MessageInput({ sendMessage }: { sendMessage: () => void }) {
+function MessageInput({ send }: { send: () => void }) {
   const { onKeyDown } = useIMESafeEnter<HTMLTextAreaElement>({
-    onEnter: sendMessage,
+    onEnter: send,
   });
+
   return <textarea onKeyDown={onKeyDown} />;
 }
 ```
 
-Plain Enter calls `onEnter(event)` and prevents the default action, avoiding an
-extra newline or implicit form submission. IME confirmation passes through untouched.
+That's it. No composition event handlers are needed. Enter sends, Shift+Enter
+inserts a newline, and Enter that confirms an IME conversion is left to the IME.
 
-| Option | Default | Behavior |
-| --- | --- | --- |
-| `onEnter` | Required | Receives the React keyboard event |
-| `shiftEnter` | `"newline"` | Passes Shift+Enter through; `"submit"` calls `onEnter` |
-| `preventDefault` | `true` | Prevents default for handled Enter, including suppressed repeats |
-| `allowRepeat` | `false` | Suppresses repeated Enter keydowns; `true` allows held-key submissions |
+## API
 
-Ctrl, Meta, and Alt + Enter pass through untouched. `onKeyDown` keeps the same
-identity across renders and uses the latest committed callback and options.
-No composition handlers are required. Use the same handler on `<input>` or
-`<div contentEditable onKeyDown={onKeyDown} />`.
+### `useIMESafeEnter(options)`
 
-Holding Enter calls `onEnter` only on the first keydown by default. Suppressed
-repeats still prevent the browser default when `preventDefault` is true. IME
-events and passthrough modifiers are unaffected.
+Returns `{ onKeyDown }` to attach to an `<input>`, `<textarea>`, or
+`contentEditable` element.
 
-On an `<input>` inside a `<form>`, passthrough Shift/Ctrl/Meta/Alt + Enter can
-trigger native implicit form submission without calling `onEnter`. `"newline"`
-means passthrough; single-line inputs cannot insert a newline. If all submissions
-should be controlled by your application, prevent the form default in `onSubmit`
-and route sending through your explicit callback.
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `onEnter` | `(event: KeyboardEvent<T>) => void` | Required | Called on a plain Enter that is not part of an IME composition. |
+| `shiftEnter` | `"newline" \| "submit"` | `"newline"` | `"newline"` passes Shift+Enter through to the browser; `"submit"` calls `onEnter`. |
+| `allowRepeat` | `boolean` | `false` | When `false`, holding Enter calls `onEnter` only on the first keydown. |
+| `preventDefault` | `boolean` | `true` | Prevents the browser default (newline or implicit form submission) for handled Enter, including suppressed repeats. |
 
-## Composition state and custom keyboard handling
+Behavior details:
+
+- Enter that confirms an IME conversion is never prevented, so the IME
+  receives it.
+- Ctrl, Meta, and Alt + Enter pass through untouched, leaving them free for
+  your own shortcuts.
+- `onKeyDown` keeps the same identity across renders and always uses the
+  latest committed options, so it is safe to pass inline callbacks.
+
+### `useIME()`
+
+Tracks composition state for **rendering**, such as showing a
+"composing…" indicator.
 
 ```tsx
 import { isIMEComposing, useIME } from "ime-safe";
 
-function Input({ sendMessage }: { sendMessage: () => void }) {
+function Input({ send }: { send: () => void }) {
   const { isComposing, compositionProps } = useIME();
+
   return (
     <>
       <textarea
@@ -60,7 +103,7 @@ function Input({ sendMessage }: { sendMessage: () => void }) {
         onKeyDown={(event) => {
           if (event.key === "Enter" && !isIMEComposing(event)) {
             event.preventDefault();
-            sendMessage();
+            send();
           }
         }}
       />
@@ -70,70 +113,105 @@ function Input({ sendMessage }: { sendMessage: () => void }) {
 }
 ```
 
-`useIME()` tracks `compositionstart` and `compositionend` for rendering indicators.
-Its `compositionProps.onBlur` resets state if focus leaves before composition ends.
-Its state must **not** guard keyboard actions: Safari can end composition before
-the confirming Enter keydown, and React state updates are not synchronous.
-If you attach your own composition handlers, call the corresponding
-`compositionProps` handler (including `onBlur`) as well; spreading props does not merge handlers.
+Returns:
 
-For example, preserve the reset when adding your own blur behavior:
+- `isComposing: boolean`: true between `compositionstart` and `compositionend`.
+- `compositionProps`: `onCompositionStart`, `onCompositionEnd`, and `onBlur`
+  handlers to spread onto the element. `onBlur` resets the state if focus
+  leaves before `compositionend` fires.
+
+> [!WARNING]
+> Do not use `isComposing` to guard keyboard actions. Safari ends composition
+> before the confirming Enter keydown, and React state updates are not
+> synchronous. Use `isIMEComposing(event)` or `useIMESafeEnter` instead.
+
+### `isIMEComposing(event)`
+
+A stateless check that returns `true` when a keyboard event belongs to an IME
+composition. It accepts native `KeyboardEvent`s, React keyboard events, or
+plain objects.
+
+```ts
+import { isIMEComposing } from "ime-safe/core"; // no React import
+
+input.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !isIMEComposing(event)) submit();
+});
+```
+
+It returns `true` if the event or its `nativeEvent` has any of the following:
+
+| Signal | Why |
+| --- | --- |
+| `isComposing === true` | Standard flag (Chrome, Edge, Firefox) |
+| `keyCode === 229` | Safari's confirming Enter, after `compositionend` |
+| `key === "Process"` | Chrome on Windows |
+
+### Exports
+
+| Entry point | Exports |
+| --- | --- |
+| `ime-safe` | `useIMESafeEnter`, `useIME`, `isIMEComposing`, and the types `UseIMESafeEnterOptions`, `UseIMESafeEnterResult`, `UseIMEResult`, `KeyboardEventLike` |
+| `ime-safe/core` | `isIMEComposing`, `KeyboardEventLike` (React-free) |
+
+## Recipes
+
+### Single-line `<input>` inside a `<form>`
+
+Shift/Ctrl/Meta/Alt + Enter pass through to the browser, so on an `<input>`
+inside a `<form>` they can trigger native implicit submission without calling
+`onEnter`. To route every submission through your own code, prevent the form
+default:
 
 ```tsx
-const { compositionProps } = useIME();
+<form onSubmit={(event) => event.preventDefault()}>
+  <input onKeyDown={onKeyDown} />
+</form>
+```
 
+### Adding your own `onBlur`
+
+`compositionProps` includes `onBlur`. An `onBlur` placed after the spread
+replaces it, so call it explicitly:
+
+```tsx
 <textarea
   {...compositionProps}
   onBlur={(event) => {
     compositionProps.onBlur(event);
     saveDraft();
   }}
-/>;
+/>
 ```
 
-Despite its name, `compositionProps` also includes `onBlur` for recovery when
-`compositionend` is missing. Placing your own `onBlur` after the spread replaces
-that handler, so call it explicitly as shown above.
+## Compatibility
 
-`isIMEComposing(event)` is stateless and accepts native events, React events, or
-plain objects with optional `key`, `keyCode`, `isComposing`, and `nativeEvent` fields.
-It returns true if either event contains `isComposing === true`, `keyCode === 229`,
-or `key === "Process"`. The deprecated `keyCode` is intentionally retained for
-Safari's confirming Enter. It uses no timeout after composition ends, allowing
-the real second Enter keydown emitted by Korean IMEs to submit immediately.
+| Environment | Support |
+| --- | --- |
+| React | 17 or later |
+| SSR | Supported. With React Server Components, use the hooks in a `"use client"` component. |
+| Module format | ESM only. On Node.js 20.19+ or 22.12+, `require("ime-safe")` also works through [require(esm)](https://nodejs.org/api/modules.html#loading-ecmascript-modules-using-require); older CommonJS environments can use `import("ime-safe")`. |
+| Browsers | Chrome, Edge, Safari, Firefox |
 
-For non-React code, the core export does not import React:
+Browser behavior is covered by automated tests that replay each browser's
+event ordering. Verification with real OS IMEs is tracked in the
+[manual testing checklist](https://github.com/Yoshiyuki-Iwasaki/ime-safe/blob/main/docs/manual-testing.md).
 
-```ts
-import { isIMEComposing } from "ime-safe/core";
-```
+## Contributing
 
-Hooks can render on the server. In React Server Component applications, use
-hooks inside a client component (`"use client"`).
-
-## Development and verification
-
-Use Node.js 22.14+ for the development tooling.
+Issues and pull requests are welcome. Use Node.js 22.14 or later for development:
 
 ```sh
 npm ci
 npm run typecheck
 npm test
 npm run build
-npm pack --dry-run
 ```
 
-`npm pack` runs type checking, tests, and the build before packaging. Only the
-built library, README, license, and package metadata are shipped. Development
-documentation and the manual test page stay in the repository.
-The React peer dependency is not bundled. This is intentionally an ESM-only
-package; no separate CommonJS build or `require` export is provided. On Node.js
-20.19+ or 22.12+ (and later major versions), `require("ime-safe")` and
-`require("ime-safe/core")` work through Node's
-[require(esm) support](https://nodejs.org/api/modules.html#loading-ecmascript-modules-using-require).
-Older CommonJS environments that support dynamic import can use asynchronous
-`import("ime-safe")` instead.
+When changing keyboard behavior, add a regression test, and add new browser
+event orderings to `test/sequences.ts`. To check against a real IME, see the
+[manual testing checklist](https://github.com/Yoshiyuki-Iwasaki/ime-safe/blob/main/docs/manual-testing.md).
 
-Unit tests replay Chrome/Edge, Safari, Firefox, Windows Chrome, and Korean IME
-event orderings in jsdom; they do not operate a real IME. Real-browser verification
-and its current status are documented in [the manual checklist](https://github.com/Yoshiyuki-Iwasaki/ime-safe/blob/main/docs/manual-testing.md).
+## License
+
+[MIT](LICENSE)
