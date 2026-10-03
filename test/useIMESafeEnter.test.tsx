@@ -1,7 +1,7 @@
 import { fireEvent, render, renderHook, screen } from "@testing-library/react";
-import { useState, type KeyboardEvent } from "react";
+import { startTransition, Suspense, useState, type KeyboardEvent } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { useIMESafeEnter } from "../src";
+import { useIMESafeEnter, type UseIMESafeEnterOptions } from "../src/react";
 import {
   chromeConfirm,
   firefoxConfirm,
@@ -11,7 +11,7 @@ import {
   windowsChromeConfirm,
 } from "./sequences";
 
-type Options = Parameters<typeof useIMESafeEnter>[0];
+type Options = UseIMESafeEnterOptions;
 type Target = "input" | "textarea" | "contentEditable";
 
 function Field({ target = "textarea", ...options }: Options & { target?: Target }) {
@@ -239,6 +239,47 @@ describe("useIMESafeEnter", () => {
     plainEnter(field);
     plainEnter(field);
     expect(screen.getByTestId("count").textContent).toBe("3");
+  });
+
+  it("keeps committed options when a subsequent render suspends", () => {
+    const committed = vi.fn();
+    const pending = vi.fn();
+    const suspendedRender = vi.fn();
+    const neverResolves = new Promise<void>(() => {});
+
+    function Input({ suspend }: { suspend: boolean }) {
+      const { onKeyDown } = useIMESafeEnter({
+        onEnter: suspend ? pending : committed,
+        shiftEnter: suspend ? "submit" : "newline",
+        preventDefault: !suspend,
+      });
+      if (suspend) {
+        suspendedRender();
+        throw neverResolves;
+      }
+      return <textarea data-testid="field" onKeyDown={onKeyDown} />;
+    }
+
+    function App() {
+      const [suspend, setSuspend] = useState(false);
+      return (
+        <>
+          <button onClick={() => startTransition(() => setSuspend(true))}>Update</button>
+          <Suspense fallback={<span>Loading</span>}>
+            <Input suspend={suspend} />
+          </Suspense>
+        </>
+      );
+    }
+
+    render(<App />);
+    const field = screen.getByTestId("field");
+    fireEvent.click(screen.getByText("Update"));
+    expect(suspendedRender).toHaveBeenCalled();
+    expect(fireEvent.keyDown(field, { key: "Enter", shiftKey: true })).toBe(true);
+    expect(fireEvent.keyDown(field, { key: "Enter" })).toBe(false);
+    expect(committed).toHaveBeenCalledTimes(1);
+    expect(pending).not.toHaveBeenCalled();
   });
 
   it("uses updated shiftEnter and preventDefault options without changing the handler", () => {

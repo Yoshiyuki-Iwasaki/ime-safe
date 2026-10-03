@@ -16,11 +16,14 @@ python3 -m http.server 8080
 Open http://localhost:8080/docs/manual-testing.html. The page uses the built
 package and loads React from esm.sh, so an internet connection is required.
 It displays a submission count, composition state, and the keyboard event log.
+The React fields use `ime-safe/react`; the vanilla textarea at the bottom uses
+`createIMESafeEnterHandler` from `ime-safe` with default options.
 
 ## Checklist
 
 Repeat on input, textarea, and contentEditable in Chrome, Safari, and Firefox,
-using Japanese, Chinese, and Korean IMEs where available. Record browser version,
+using Japanese, Chinese, and Korean IMEs where available. On the vanilla
+textarea, repeat the items that use default options. Record browser version,
 OS version, IME name, date, and any failed steps.
 
 - Plain Enter increments the submission count once.
@@ -47,5 +50,6 @@ OS version, IME name, date, and any failed steps.
 | Safari 18.6 | macOS 15.7.9 / Japanese | Pass (partial) | 2026-10-02: Japanese confirmation Enter and the next Enter passed. Other items not executed. |
 | Chrome / Safari | macOS / Chinese, Korean | Not executed | Includes the Korean second-Enter check |
 | Firefox | Pending | Not executed | Real IME verification required |
+| Chrome / Safari / Firefox | Vanilla textarea (Core API) | Not executed | Added with `createIMESafeEnterHandler`; no real-browser results yet |
 
 Do not interpret passing jsdom sequence tests as these manual checks passing.
