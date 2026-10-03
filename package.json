@@ -1,6 +1,6 @@
 {
   "name": "ime-safe",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Framework-agnostic IME-safe keyboard handling utilities",
   "type": "module",
   "license": "MIT",
