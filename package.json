@@ -1,7 +1,7 @@
 {
   "name": "ime-safe",
   "version": "0.1.0",
-  "description": "IME-safe keyboard handling utilities for React",
+  "description": "Framework-agnostic IME-safe keyboard handling utilities",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -14,6 +14,11 @@
   "peerDependencies": {
     "react": ">=17"
   },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
@@ -25,18 +30,23 @@
     "typescript": "^7.0.2",
     "vitest": "^5.0.3"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/core/index.js",
+  "types": "./dist/core/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js",
+      "default": "./dist/core/index.js"
     },
     "./core": {
-      "types": "./dist/isIMEComposing.d.ts",
-      "import": "./dist/isIMEComposing.js",
-      "default": "./dist/isIMEComposing.js"
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js",
+      "default": "./dist/core/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js",
+      "default": "./dist/react/index.js"
     }
   },
   "files": [
@@ -52,10 +62,15 @@
   },
   "homepage": "https://github.com/Yoshiyuki-Iwasaki/ime-safe#readme",
   "keywords": [
-    "react",
     "ime",
     "keyboard",
     "composition",
-    "typescript"
+    "input",
+    "textarea",
+    "typescript",
+    "javascript",
+    "react",
+    "vue",
+    "svelte"
   ]
 }

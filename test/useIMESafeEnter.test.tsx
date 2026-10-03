@@ -1,7 +1,7 @@
 import { fireEvent, render, renderHook, screen } from "@testing-library/react";
 import { useState, type KeyboardEvent } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { useIMESafeEnter } from "../src";
+import { useIMESafeEnter, type UseIMESafeEnterOptions } from "../src/react";
 import {
   chromeConfirm,
   firefoxConfirm,
@@ -11,7 +11,7 @@ import {
   windowsChromeConfirm,
 } from "./sequences";
 
-type Options = Parameters<typeof useIMESafeEnter>[0];
+type Options = UseIMESafeEnterOptions;
 type Target = "input" | "textarea" | "contentEditable";
 
 function Field({ target = "textarea", ...options }: Options & { target?: Target }) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isIMEComposing } from "../src";
+import { isIMEComposing } from "../src/core";
 
 describe("isIMEComposing", () => {
   describe("native KeyboardEvent", () => {

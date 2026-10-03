@@ -1,15 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, type KeyboardEvent } from "react";
-import { isIMEComposing } from "./isIMEComposing.js";
+import { handleIMESafeEnter, type IMESafeEnterOptions } from "../core/createIMESafeEnterHandler.js";
 
-export type UseIMESafeEnterOptions<T extends HTMLElement = HTMLElement> = {
-  onEnter: (event: KeyboardEvent<T>) => void;
-  /** Defaults to "newline", passing Shift+Enter through untouched. */
-  shiftEnter?: "newline" | "submit";
-  /** Defaults to false, suppressing held-key submissions. */
-  allowRepeat?: boolean;
-  /** Defaults to true; also prevents the default action of suppressed repeats. */
-  preventDefault?: boolean;
-};
+export type UseIMESafeEnterOptions<T extends HTMLElement = HTMLElement> = IMESafeEnterOptions<KeyboardEvent<T>>;
 
 export type UseIMESafeEnterResult<T extends HTMLElement = HTMLElement> = {
   onKeyDown: (event: KeyboardEvent<T>) => void;
@@ -28,15 +20,7 @@ export function useIMESafeEnter<T extends HTMLElement = HTMLElement>(
   });
 
   const onKeyDown = useCallback((event: KeyboardEvent<T>) => {
-    if (
-      event.key !== "Enter" || isIMEComposing(event) ||
-      event.ctrlKey || event.metaKey || event.altKey
-    ) return;
-    const { onEnter, shiftEnter = "newline", preventDefault = true, allowRepeat = false } = latestOptions.current;
-    if (event.shiftKey && shiftEnter !== "submit") return;
-    if (preventDefault) event.preventDefault();
-    if (event.repeat && !allowRepeat) return;
-    onEnter(event);
+    handleIMESafeEnter(event, latestOptions.current);
   }, []);
 
   return { onKeyDown };

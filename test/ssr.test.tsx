@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { useIME, useIMESafeEnter } from "../src";
+import { useIME, useIMESafeEnter } from "../src/react";
 
 function App() {
   const { isComposing, compositionProps } = useIME();

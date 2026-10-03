@@ -1,7 +1,8 @@
 import { act, fireEvent, render, renderHook, screen } from "@testing-library/react";
 import type { CompositionEvent } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { isIMEComposing, useIME } from "../src";
+import { isIMEComposing } from "../src/core";
+import { useIME } from "../src/react";
 import { chromeConfirm, safariConfirm } from "./sequences";
 
 type Target = "input" | "textarea" | "contentEditable";
