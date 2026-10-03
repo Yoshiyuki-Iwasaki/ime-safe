@@ -2,14 +2,19 @@
 
 ## Scope and layout
 
-`ime-safe` is a small, publishable TypeScript library for IME-safe keyboard
-handling. Keep its scope focused on keyboard utilities; UI components, editors,
-and IME conversion are outside the MVP.
+`ime-safe` is a small, publishable TypeScript library for framework-agnostic,
+IME-safe keyboard handling with optional React helpers. Keep its scope focused
+on keyboard utilities; UI components, editors, IME conversion, and adapters for
+frameworks other than React are out of scope.
 
-- `src/isIMEComposing.ts`: stateless detection with no React dependency.
-- `src/useIME.ts`: composition state for rendering, reset on blur.
-- `src/useIMESafeEnter.ts`: React Enter handling.
-- `src/index.ts`: public exports.
+- `src/core/`: framework-agnostic Core, exported as `ime-safe` and the
+  `ime-safe/core` alias. No imports outside `src/core`.
+  - `isIMEComposing.ts`: stateless detection.
+  - `createIMESafeEnterHandler.ts`: the shared Enter decision
+    (`handleIMESafeEnter`) and the DOM handler factory.
+- `src/react/`: React helpers, exported as `ime-safe/react`.
+  - `useIME.ts`: composition state for rendering, reset on blur.
+  - `useIMESafeEnter.ts`: React adapter over `handleIMESafeEnter`.
 - `test/`: Vitest and Testing Library tests; `sequences.ts` replays browser orderings.
 - `docs/manual-testing.*`: real-browser checklist and verification page.
 - `tsconfig.build.json`: npm build configuration, emitting into ignored `dist/`.
@@ -22,14 +27,17 @@ and IME conversion are outside the MVP.
   second, real Enter keydown that must submit immediately.
 - Do not use `useIME().isComposing` to guard keyboard actions. Safari can emit
   `compositionend` before the confirming Enter; React state is for rendering.
-- `useIMESafeEnter` handles plain Enter and optionally Shift+Enter. Ctrl, Meta,
+- Keep the Enter decision in `handleIMESafeEnter`; `createIMESafeEnterHandler`
+  and `useIMESafeEnter` must not duplicate it.
+- Enter handling covers plain Enter and optionally Shift+Enter. Ctrl, Meta,
   and Alt modifiers pass through. Shift+Enter defaults to `"newline"`.
 - Suppress repeated Enter keydowns by default; `allowRepeat` opts into repeats.
 - Prevent default for handled Enter, including suppressed repeats, unless disabled.
   Ignored IME events must remain available to the IME.
-- Keep `onKeyDown` stable while using the latest committed callback and options.
+- Keep the React `onKeyDown` stable while using the latest committed callback
+  and options.
 - Preserve React 17+ support, SSR safety, and HTMLElement-generic handlers for
-  input, textarea, and contentEditable.
+  input, textarea, and contentEditable. Core must work without React installed.
 
 ## Development and validation
 
@@ -57,10 +65,11 @@ manual results, browser/OS/IME versions, and unexecuted checks in
 
 ## Publication and review
 
-Ship ES modules and declaration files. Keep React as a peer dependency and
-`ime-safe/core` free of React imports. Keep public exports, package metadata,
-README examples, and emitted declarations consistent. Do not commit `dist/`,
-`node_modules/`, local editor settings, caches, or tarballs.
+Ship ES modules and declaration files. Keep React an optional peer dependency
+and the `ime-safe` / `ime-safe/core` entry points free of React imports. Keep
+public exports, package metadata, README examples, and emitted declarations
+consistent. Do not commit `dist/`, `node_modules/`, local editor settings,
+caches, or tarballs.
 
 Include the problem, resulting behavior, validation, and any remaining manual
 verification in PR descriptions. Reference the relevant issue and its revised
